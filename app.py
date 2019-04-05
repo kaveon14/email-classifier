@@ -145,10 +145,11 @@ model_input = keras.layers.Input(tensor=email)
 
 #Build your network
 x = keras.layers.Dense(units=57, activation=tf.math.sigmoid)(model_input)# wtf is this doing
-model_output = keras.layers.Dense(units=1, activation='relu')(x)
+y =  keras.layers.Dense(units=27, activation=tf.math.sigmoid)(x) # added another layer
+model_output = keras.layers.Dense(units=1, activation='relu')(y)
 
 #Create your model
-train_model = keras.models.Model(inputs=model_input, outputs=model_output)
+ train_model = keras.models.Model(inputs=model_input, outputs=model_output)
 
 
 
@@ -159,7 +160,7 @@ train_model.compile(optimizer='adam',
                     metrics=[tf.keras.metrics.Accuracy()],
                     target_tensors=[label])
 
-
+print(train_model)
 
 #Train the model
 train_model.fit(x=email, y=label, epochs=EPOCHS,
