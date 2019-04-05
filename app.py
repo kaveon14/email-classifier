@@ -34,7 +34,7 @@ def get_example_object(data_record):
 
 def get_data_arr():
     data_arr = []
-    with open('spambase/test.data', 'r') as file:
+    with open('spambase/spambase.data', 'r') as file:
         for line in file:
             data_arr.append(line)
     return data_arr
@@ -85,7 +85,7 @@ def _parse_function(proto):
 
 
 
-SHUFFLE_BUFFER = 800 # needs to be greater that or equal to the size of the dataset
+SHUFFLE_BUFFER = 4601 # needs to be greater that or equal to the size of the dataset
 BATCH_SIZE = 60
 
 
@@ -120,7 +120,7 @@ def create_dataset(filepath):
     return email, label
 
 
-# create_dataset(filename)
+create_dataset(filename)
 
 
 
@@ -153,7 +153,6 @@ train_model = keras.models.Model(inputs=model_input, outputs=model_output)
 
 
 
-
 #Compile your model
 train_model.compile(optimizer='adam',
                     loss='mean_squared_error',
@@ -164,7 +163,7 @@ train_model.compile(optimizer='adam',
 
 #Train the model
 train_model.fit(x=email, y=label, epochs=EPOCHS,
-                steps_per_epoch=STEPS_PER_EPOCH, verbose=2)
+                steps_per_epoch=STEPS_PER_EPOCH)
 
 #More Kerasstuff here
 print('done  ')
