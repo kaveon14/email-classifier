@@ -19,9 +19,7 @@ def get_example_object(data_record):
 
     l = list(map(float, string_list))
     n = numpy.array(l)
-
-
-
+    # n = n
 
     feature_key_value_pair = {
         'label' : _int64_feature(int(label)),
@@ -41,20 +39,20 @@ def get_data_arr():
 
 
 def write_tfrecord(data_arr):
-    with tf.python_io.TFRecordWriter('test-data.tfrecord') as tfwriter:
+    with tf.python_io.TFRecordWriter('training-data.tfrecord') as tfwriter:
         # Iterate through all records
         for data_record in data_arr:
             example = get_example_object(data_record)
             s = example.SerializeToString()
             # Append each example into tfrecord
             tfwriter.write(s)
+            
 
 
 def create_record():
     write_tfrecord(get_data_arr())
 
-
-def print_records(count, filename):
+def print_records(filename):
     record_iterator = tf.python_io.tf_record_iterator(path=filename)
     for string_record in record_iterator:
         example = tf.train.Example()
@@ -65,15 +63,11 @@ def print_records(count, filename):
         # Exit after 1 iteration as this is purely demonstrative.
         break
 
-create_record()
 
-filename = 'test-data.tfrecord'
-# print_records(9, filename)
-
-
+filename = 'training-data.tfrecord'
 
 def _parse_function(proto):
-    keys_to_features = {'label': tf.FixedLenFeature([1], tf.int64),
+    keys_to_features = {'label': tf.FixedLenFeature([], tf.int64),
                        'email': tf.FixedLenFeature([57], tf.float32)}
 
     parsed_features = tf.parse_single_example(proto, keys_to_features)
@@ -85,9 +79,10 @@ def _parse_function(proto):
 
 
 
-SHUFFLE_BUFFER = 4601 # needs to be greater that or equal to the size of the dataset
-BATCH_SIZE = 60
-
+SHUFFLE_BUFFER = 2*4601 # needs to be greater that or equal to the size of the dataset
+BATCH_SIZE = 64
+#50 with batch:32
+# 50 with batch:64
 
 def create_dataset(filepath):
     # This works with arrays as well
@@ -110,17 +105,18 @@ def create_dataset(filepath):
 
     email, label = iterator.get_next()
 
+    # 0 : not spam
+    # 1 : spam
+    # [0,1] spam
 
-    # skip for now
-    # Bring your picture back in shape
-    # email = tf.reshape(email,0)
-    # Create a one hot array for your labels
-    label = tf.one_hot(indices=label,depth=1)
+    # [1,0] not spam
+
+    label = tf.one_hot(indices=label, depth=2)
 
     return email, label
 
 
-create_dataset(filename)
+# create_dataset(filename)
 
 
 
@@ -129,87 +125,32 @@ create_dataset(filename)
 
 
 SUM_OF_ALL_DATASAMPLES = 780
-EPOCHS = 5
+EPOCHS = 500
 
-STEPS_PER_EPOCH = int((SUM_OF_ALL_DATASAMPLES * EPOCHS) / BATCH_SIZE)
-#Get your datatensors
+STEPS_PER_EPOCH = int((SUM_OF_ALL_DATASAMPLES) / BATCH_SIZE)
+
 email, label = create_dataset(filename)
 
-
-
-
-
-
-#Combine it with keras
 model_input = keras.layers.Input(tensor=email)
 
-#Build your network
-x = keras.layers.Dense(units=57, activation=tf.math.sigmoid)(model_input)# wtf is this doing
-y =  keras.layers.Dense(units=27, activation=tf.math.sigmoid)(x) # added another layer
-model_output = keras.layers.Dense(units=1, activation='relu')(y)
+x = keras.layers.Dense(units=57,input_dim=57, activation='linear', use_bias=True)(model_input)# wtf is this doing
+y = keras.layers.Dense(units=27, activation='linear', use_bias=True)(x) # added another layer
+z = keras.layers.Dense(units=13, activation='linear', use_bias=True)(y) # added another layer, .33
+f = keras.layers.Dense(units=7, activation='linear', use_bias=True)(z) # added another layer, .34d = keras.layers.Dropout(rate=.3,seed=2)(x), .9466 with drop
+d = keras.layers.Dropout(rate=.1,seed=2)(f)#.93
+model_output = keras.layers.Dense(units=2, activation=tf.math.softmax)(d) # .37
 
 #Create your model
- train_model = keras.models.Model(inputs=model_input, outputs=model_output)
-
-
+train_model = keras.models.Model(inputs=model_input, outputs=model_output)
 
 
 #Compile your model
 train_model.compile(optimizer='adam',
-                    loss='mean_squared_error',
-                    metrics=[tf.keras.metrics.Accuracy()],
-                    target_tensors=[label])
-
-print(train_model)
+                    # loss=tf.keras.losses.categorical_crossentropy,
+                    loss=tf.nn.softmax_cross_entropy_with_logits_v2,
+                    # loss='binary_crossentropy',
+                    metrics=[tf.keras.metrics.BinaryAccuracy(threshold=.5)])
 
 #Train the model
-train_model.fit(x=email, y=label, epochs=EPOCHS,
+history = train_model.fit(x=email, y=label, epochs=EPOCHS,
                 steps_per_epoch=STEPS_PER_EPOCH)
-
-#More Kerasstuff here
-print('done  ')
-
-
-
-
-# d = raw_dataset.take(10)
-# print(d)
-'''
-iterator = raw_dataset.make_initializable_iterator()
-
-next_element = iterator.get_next()
-init_op = iterator.initializer
-
-
-
-
-
-
-
-
-model = keras.Sequential([
-    keras.layers.Dense(128, activation=tf.nn.relu),
-    keras.layers.Dense(10, activation=tf.nn.softmax)
-])
-
-
-model.compile(optimizer='adam', 
-              loss='sparse_categorical_crossentropy',
-              metrics=['accuracy'])
-
-
-model.fit()
-
-
-
-sess = tf.Session()
-for i in range(1):
-    sess.run(init_op)
-
-    # tensors??
-    label = sess.run(next_element)
-    print(label)
-
-test
-'''
-
