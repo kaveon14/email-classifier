@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy
 from tensorflow import keras
+import tensor.part_data as data
 
 
 def _int64_feature(value):
@@ -116,7 +117,16 @@ def create_dataset(filepath):
     return email, label
 
 
-# create_dataset(filename)
+
+
+# create_record()
+training_records, training_tfr, validation_tfr, testing_tfr = data.create_full_dataset()
+
+training_email, training_label = create_dataset(training_tfr)
+
+validation_email, validation_label = create_dataset(validation_tfr)
+
+testing_email, testing_label = create_dataset(testing_tfr)
 
 
 
@@ -124,12 +134,28 @@ def create_dataset(filepath):
 
 
 
-SUM_OF_ALL_DATASAMPLES = 780
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SUM_OF_ALL_DATASAMPLES = 4601
 EPOCHS = 500
 
 STEPS_PER_EPOCH = int((SUM_OF_ALL_DATASAMPLES) / BATCH_SIZE)
 
 email, label = create_dataset(filename)
+
 
 model_input = keras.layers.Input(tensor=email)
 
